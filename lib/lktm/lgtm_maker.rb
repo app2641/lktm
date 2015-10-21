@@ -5,9 +5,11 @@ require 'byebug'
 module Lktm
   class LgtmMaker
     IMAGE_WIDTH = 1_000
+    LIMIT_WIDTH = 270
 
-    def initialize file_path
+    def initialize file_path, resize
       @file_path = file_path
+      @resize = resize
     end
 
     def make
@@ -17,8 +19,20 @@ module Lktm
       imgs.each do |img|
         img.composite!(logo, Magick::CenterGravity, Magick::OverCompositeOp)
       end
+
+      if LIMIT_WIDTH < imgs.first.columns && !@resize.nil?
+        scale = LIMIT_WIDTH / imgs.first.columns.to_f
+        imgs = imgs.coalesce
+        imgs.each do |frame|
+          frame.resize!(scale)
+        end
+      end
+
+      imgs.optimize_layers(Magick::OptimizeLayer)
       imgs.write(@file_path)
     end
+
+    private
 
     def logo_img width
       logo_path = File.dirname(__FILE__)+'/../../images/lgtm.gif'
